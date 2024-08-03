@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worketyamo-app
+  namespace: worketyamo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: worketyamo-app
+  template:
+    metadata:
+      labels:
+        app: worketyamo-app
+    spec:
+      containers:
+      - name: react-app
+        image: worketyamoo/react-app
+        ports:
+        - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: worketyamo-app
+  namespace: worketyamo
+spec:
+  selector:
+    app: worketyamo-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: worketyamo-app
+  namespace: worketyamo
+  annotations:
+    cert-manager.io/cluster-issuer: lets-encrypt
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: public
+  tls:
+  - hosts:
+    - worketyamo.com
+    - www.worketyamo.com
+    secretName: worketyamo.com
+  rules:
+  - host: worketyamo.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: worketyamo-app
+            port:
+              number: 80
+
+  - host: www.worketyamo.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: worketyamo-app
+            port:
+              number: 80
+
